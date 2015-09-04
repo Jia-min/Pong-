@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title> A simple pong game </title>
+<style>
+canvas {
+    padding-left: 0;
+    padding-right: 0;
+    margin-left: auto;
+    margin-right: auto;
+    display: block;
+}
+</style>
+
+</head>
+<body>
+<p> test </p>
+<script>
+
+
+var UpArrow = 38, DownArrow = 40, KeyW = 87, KeyS = 83;
+var pi = Math.PI, WIDTH = 650, HEIGHT = 600;
+var canvas, ctx, keystate,
+
+player1 = {
+    x: null,
+    y: null,
+    width: 10,
+    height: 150,
+    yBottom: null, // Used to set hitbox parameters
+
+    update: function () {
+        if (keystate[KeyW] && this.y > 0) {
+            this.y -= 8;
+            this.yBottom = this.y + this.height;
+        } else if (keystate[KeyS] && this.y < (HEIGHT - this.height)) {
+            this.y += 8;
+            this.yBottom = this.y + this.height;
+        }
+
+    },
+    draw: function () {
+        ctx.fillRect(this.x, this.y, this.width, this.height);
+    }
+},
+
+player2 = {
+    x: null,
+    y: null,
+    width: 10,
+    height: 150,
+    yBottom: null,
+    update: function () {
+        if (keystate[UpArrow] && this.y > 0) {
+            this.y -= 8;
+            this.yBottom = this.y + this.height;
+        } else if (keystate[DownArrow] && this.y < (HEIGHT - this.height)) {
+            this.y += 8;
+            this.yBottom = this.y + this.height;
+        }
+
+
+    },
+    draw: function () {
+	ctx.fillRect(this.x, this.y, this.width, this.height);
+    }
+},
+
+ball = {
+    x: null,
+    y: null,
+    v: null,
+    rad: 8,
+    speed: 15,
+    
+    /* 
+    These two variables used to denote the hitbox for the ball
+     */
+    xLeft: null,            
+    xRight: null,
+
+    update: function () {
+        this.x += this.v.x;
+        this.y += this.v.y;
+        xLeft = this.x - this.rad;
+        xRight = this.x + this.rad;
+
+
+        if (this.y > HEIGHT || this.y < 0) {
+            this.v.y = this.v.y * (-1);
+        }
+        var detectCollision = function(b, p) {                     
+            var distX = Math.abs(b.x - p.x-p.width/2);
+            var distY = Math.abs(b.y - p.y-p.height/2);
+
+            if (distX > (p.width/2 + b.rad)) { return false; }
+            if (distY > (p.height/2 + b.rad)) { return false; }
+
+            if (distX <= (p.width/2)) { return true; } 
+            if (distY <= (p.height/2)) { return true; }
+
+            var dx=distX-p.width/2;
+            var dy=distY-p.height/2;
+            return ((dx*dx+dy*dy) <= (b.rad*b.rad));
+        }
+
+        var p = this.v.x < 0 ? player1 : player2;
+        if (detectCollision(ball, p)) {   
+            /*
+            pCentre = p.y + p.height/2; 
+            opp = Math.abs(pCentre - ball.y);
+            adj = Math.abs(p.height/2 - opp);
+            total = opp + adj;
+            if (p == player1) {
+                this.v.x = (adj/total) * ball.speed;
+                this.v.y = -1 * (opp/total) * ball.speed;
+            } else if (p == player2) {
+                this.v.x = -1 * (adj/total) * ball.speed;
+                this.v.y = -1 * (opp/total) * ball.speed;
+            }
+            */
+            this.x = p===player1 ? player1.x+player1.width : player2.x - this.rad;              // WORK ON FROM HERE
+            var n = (this.y+this.rad - p.y)/(p.height+this.rad);
+            var phi = 0.25*pi*(2*n - 1); // pi/4 = 45
+            // calculate smash value and update velocity
+            var smash = Math.abs(phi) > 0.2*pi ? 1.5 : 1;
+            this.vel.x = smash*(p===player1 ? 1 : -1)*this.speed*Math.cos(phi);
+            this.vel.y = smash*this.speed*Math.sin(phi);
+
+        }
+
+    },
+    draw: function () {
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.rad, 0, 2 * Math.PI);
+        ctx.fill();
+    }
+
+};
+
+function main() {
+    canvas = document.createElement("canvas");
+    canvas.width = WIDTH;
+    canvas.height = HEIGHT;
+    ctx = canvas.getContext("2d");
+    document.body.appendChild(canvas);
+	
+    keystate = {};
+    document.addEventListener("keydown", function(evt) {
+        keystate[evt.keyCode] = true;
+    });
+    document.addEventListener("keyup", function(evt) {
+        keystate[evt.keyCode] = false;
+    });
+
+
+
+
+    init();
+    var loop = function () {
+        update(); 
+        draw();
+
+        window.requestAnimationFrame(loop, canvas);
+    };
+    window.requestAnimationFrame(loop, canvas);
+}
+
+function init() {	
+    player1.x = player1.width;
+    player1.y = (HEIGHT - player1.height)/2;
+
+    player2.x = WIDTH - (player1.width + player2.width);
+    player2.y = (HEIGHT - player2.height)/2;
+
+    ball.x = (WIDTH - ball.rad)/2;
+    ball.y = (HEIGHT - ball.rad)/2;
+
+    ball.v = {
+        x: -ball.speed,
+        y: 0
+};
+}
+
+function update() {
+    player1.update();
+    player2.update();
+    ball.update();
+}
+
+function draw() {
+    ctx.fillRect(0,0,WIDTH,HEIGHT);
+    ctx.save();
+    ctx.fillStyle = "#FFFFFF";
+
+
+
+    ball.draw();
+    player1.draw();
+    player2.draw();
+
+    ctx.restore();
+}
+
+main();
+</script>
+
+</body>
